@@ -2,6 +2,14 @@ package ie.gmit.sw;
 
 import java.util.Scanner;
 
+/**
+ * Generates a User interface where the user can enter the file names, shingle size, k and thread pool size.
+ * 
+ * @author Donal Burke
+ * @version 1.0 
+ *
+ */
+
 public class Menu {
 	
 	private Scanner console = new Scanner(System.in);
@@ -28,6 +36,8 @@ public class Menu {
 			int poolSize = console.nextInt();
 			
 			new Launcher().Launch(f1, f2, shingleSize, k, poolSize);
+		} else {
+			System.exit(0);
 		}
 		
 	}

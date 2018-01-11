@@ -9,34 +9,65 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.concurrent.BlockingQueue;
 
-public class DocumentParser implements Runnable{
+/**
+ * Parses given document and generates shingles of a specified size and adds them a {@link BlockingQueue}.
+ * 
+ * @author Donal Burke
+ * @version 1.0 
+ *
+ */
+
+public class DocumentParser implements Runnable, Parserator{
 	private String file;
 	private int shingleSize;
-	private int k;
-	private BlockingQueue<Shingle> q;
+	private BlockingQueue<Shingle> queue;
 	private Deque<String> buffer = new LinkedList<>();
 	private int docId;
 	
-	public DocumentParser(String file, int shingleSize, int k, BlockingQueue<Shingle> q,int docId) {
+	/**
+	 * Instantiates new DocumentParser object with given parameters.
+	 * 
+	 * @param file			the name of the file.
+	 * @param shingleSize	size of a shingle.
+	 * @param queue			the {@link BlockingQueue}.
+	 * @param docId			the document ID of the file.
+	 * 
+	 */
+	
+	public DocumentParser(String file, int shingleSize, BlockingQueue<Shingle> queue, int docId) {
 		super();
 		this.file = file;
 		this.shingleSize = shingleSize;
-		this.k = k;
-		this.q = q;
+		this.queue = queue;
 		this.docId = docId;
 	}
 	
+	/**
+	 * Method that runs when the thread starts.
+	 * 
+	 */
 	public void run() {
+		parse();
+	}
+	
+	/**
+	 * Reads each line from a file and skips blank lines, converts the line to upper case and splits the
+	 * line into words whenever there is a space between characters. 
+	 * Words are then passed to the <code>addWordsToBuffer()</code> method. 
+	 * Creates a new Shingle object and adds it to a {@link BlockingQueue}.
+	 */
+	@Override
+	public void parse() {
 		try {
 			BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
 			String line = null;
 			while((line = br.readLine())!= null) {
 				if(line.length()>0) {
-					String uLine = line.toUpperCase();
-					String [] words = uLine.split("\\s+");
+					String uppercase = line.toUpperCase();
+					String words[] = uppercase.split("\\s+");
 					addWordsToBuffer(words);
 					Shingle s = getNextShingle();
-					q.put(s);
+					queue.put(s);
 				}
 			}
 		
@@ -50,7 +81,15 @@ public class DocumentParser implements Runnable{
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+		
 	}
+	
+
+	 /**
+	  * Adds words to a @{Deque} of type {@LinkedList} 
+	  * 
+	  * @param words	array of words passed from run method
+	  */
 	
 	private void addWordsToBuffer(String[] words) {
 		for (String s: words) {
@@ -58,6 +97,12 @@ public class DocumentParser implements Runnable{
 		}
 	}
 	
+	/**
+	 * Method that generates a new Shingle
+	 * 
+	 * @return	a new {@link Shingle} with docId and the <code>hashCode()</code> of a string of words of shingleSize.
+	 * @see Shingle
+	 */
 	private Shingle getNextShingle() {
 		StringBuilder sb = new StringBuilder();
 		int counter = 0;
@@ -71,25 +116,29 @@ public class DocumentParser implements Runnable{
 			}
 			
 		}
+		
 		if(sb.length() > 0) {
 			return (new Shingle(docId,sb.toString().hashCode()));
 		}
 		else {
 			return null;
 		}
-		
 	}
 	
-	private void flushBuffer() throws InterruptedException{
-
+	/**
+	 * Inserts a {@link Poison} object into the blocking queue.
+	 * 
+	 * @throws InterruptedException
+	 * @see Poison
+	 */
+	private void flushBuffer() throws InterruptedException {
 		while(buffer.size() > 0) {
 			Shingle s = getNextShingle();
 			if(s != null) {
-				q.put(s);
+				queue.put(s);
 			}
 		}
-		q.put(new Poison(docId, 0));
+		queue.put(new Poison(docId, 0));
 	}
-	
 
 }
